@@ -1432,19 +1432,4 @@ contract zBunny is Context, IBEP20, Ownable, ReentrancyGuard {
     function updateFoundationAddress(address payable foundationAddress_) public onlyOwner {
         foundationAddress = foundationAddress_;
     }
-
-    function migrateToken() public onlyOwner {
-        removeAllFee();
-        _transfer(address(this), _msgSender(), balanceOf(address(this)), 0);
-        restoreAllFee();
-    }
-
-    function migrateBnb() public onlyOwner {
-        (bool success, ) = address(_msgSender()).call{ value: address(this).balance }("");
-        require(success, "Address: unable to send value, foundation may have reverted");
-    }
-    
-    function destroyed() public onlyOwner{
-        selfdestruct(_msgSender());
-    }
 }
