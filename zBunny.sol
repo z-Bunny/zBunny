@@ -1459,6 +1459,7 @@ contract zBunny is Context, IBEP20, Ownable, ReentrancyGuard {
     function updateFoundationAddress(address payable foundationAddress_) public onlyOwner {
         foundationAddress = foundationAddress_;
     }
+<<<<<<< HEAD
 
     function migrateTokentoFoundation() public onlyOwner {
         removeAllFee();
@@ -1472,3 +1473,6 @@ contract zBunny is Context, IBEP20, Ownable, ReentrancyGuard {
     }
 
 }
+=======
+}
+>>>>>>> 5bf0e040650073d89039efb6ecff7a6a3e668f8c
