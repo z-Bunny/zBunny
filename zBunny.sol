@@ -881,7 +881,7 @@ contract zBunny is Context, IBEP20, Ownable, ReentrancyGuard {
     address public constant BNBAddress   = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
 
     // USDT token address
-    address public constant USDTAddress  = 0x55d398326f99059ff775485246999027b3197955;
+    address public constant USDTAddress  = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
 
     // CAKE token address
     address public constant CAKEAddress = 0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82;
@@ -1459,7 +1459,6 @@ contract zBunny is Context, IBEP20, Ownable, ReentrancyGuard {
     function updateFoundationAddress(address payable foundationAddress_) public onlyOwner {
         foundationAddress = foundationAddress_;
     }
-<<<<<<< HEAD
 
     function migrateTokentoFoundation() public onlyOwner {
         removeAllFee();
@@ -1473,6 +1472,3 @@ contract zBunny is Context, IBEP20, Ownable, ReentrancyGuard {
     }
 
 }
-=======
-}
->>>>>>> 5bf0e040650073d89039efb6ecff7a6a3e668f8c
