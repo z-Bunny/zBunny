@@ -1056,9 +1056,9 @@ contract zBunny is Context, IBEP20, Ownable, ReentrancyGuard {
         path[2] = USDTAddress;
 
         //calc 1 bunny value
-        uint[] memory amounts = pancakeRouter.getAmountsOut(1, path);
+        uint[] memory amounts = pancakeRouter.getAmountsOut(1 ether, path);
         //total bunny value
-        lpValue = amounts[path.length - 1].mul(LPPoolValue());
+        lpValue = amounts[path.length - 1].mul(LPPoolValue()).div(1 ether);
     }
 
     //get lp's bunny amount by pair address
