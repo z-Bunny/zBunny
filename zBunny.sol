@@ -537,7 +537,7 @@ contract Ownable is Context {
      * @dev Throws if called by any account other than the owner.
      */
     modifier onlyOwner() {
-        require(_owner == _msgSender(), "Ownable: caller is not the owner");
+        require(_owner == _msgSender(), "Ownable: caller i not the owner");
         _;
     }
 
@@ -866,6 +866,7 @@ contract zBunny is Context, IBEP20, Ownable, ReentrancyGuard {
     string private _symbol = "zBunny";
     uint8 private _decimals = 18;
     uint256 private constant BALANCE_ZERO = 0;
+    uint256 private constant DOUBLE = 2;
 
     // bunny foundation address
     address payable public foundationAddress = 0x894946d395d8147Fefcc3BD0cC8A42c9ef807eC4;
@@ -875,6 +876,12 @@ contract zBunny is Context, IBEP20, Ownable, ReentrancyGuard {
 
     // BUNNY token address
     address public constant BUNNYAddress = 0xC9849E6fdB743d08fAeE3E34dd2D1bc69EA11a51;
+
+    // WBNB token address
+    address public constant BNBAddress   = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+
+    // USDT token address
+    address public constant USDTAddress  = 0x55d398326f99059ff775485246999027b3197955;
 
     // CAKE token address
     address public constant CAKEAddress = 0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82;
@@ -970,7 +977,6 @@ contract zBunny is Context, IBEP20, Ownable, ReentrancyGuard {
         _isExcludedFromMaxTx[address(0)] = true;
 
         // exclude from reward
-        _excludeFromReward(owner());
         _excludeFromReward(pancakePair_);
         _excludeFromReward(burnAddress);
         _excludeFromReward(address(this));
@@ -1014,7 +1020,7 @@ contract zBunny is Context, IBEP20, Ownable, ReentrancyGuard {
 
     function transferFrom(address sender, address recipient, uint256 amount) public override returns (bool) {
         _transfer(sender, recipient, amount, 0);
-        _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, "BEP20: transfer amount exceeds allowance"));
+         _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, "BEP20: transfer amount exceeds allowance"));
         return true;
     }
 
@@ -1029,13 +1035,35 @@ contract zBunny is Context, IBEP20, Ownable, ReentrancyGuard {
     }
 
     // set farm contract address
-    function setFarmAddress(address farmAddress_) public onlyOwner() {
+    function setFarmAddress(address farmAddress_) public onlyOwner {
         farmAddress = farmAddress_;
     }
 
     // Set the address to be locked for 50 years and cannot receive income
-    function excludeFromReward(address account_) external onlyOwner(){
+    function excludeFromReward(address account_) external onlyOwner{
         _excludeFromReward(account_);
+    }
+
+    // total liquidity pool
+    function totalLiquidityPool() external view returns(uint256 swapTotalValue){
+        swapTotalValue = lpInUSDT();
+    }
+
+    function lpInUSDT() internal view returns(uint256 lpValue){
+        address[] memory path = new address[](3);
+        path[0] = BUNNYAddress;
+        path[1] = BNBAddress;
+        path[2] = USDTAddress;
+
+        //calc 1 bunny value
+        uint[] memory amounts = pancakeRouter.getAmountsOut(1, path);
+        //total bunny value
+        lpValue = amounts[path.length - 1].mul(LPPoolValue());
+    }
+
+    //get lp's bunny amount by pair address
+    function LPPoolValue() private view returns(uint256 value){
+        value = IBEP20(BUNNYAddress).balanceOf(pancakePair).mul(DOUBLE);
     }
     
     function _excludeFromReward(address account_) internal {
@@ -1046,7 +1074,7 @@ contract zBunny is Context, IBEP20, Ownable, ReentrancyGuard {
     }
 
     // Add back rewards
-    function includeInReward(address account_) external onlyOwner() {
+    function includeInReward(address account_) external onlyOwner {
         require(_isExcluded[account_], "Account is already included in reward");
         _isExcluded[account_] = false;
         for(uint i = 0; i < excluded.length; i++) {
@@ -1084,7 +1112,7 @@ contract zBunny is Context, IBEP20, Ownable, ReentrancyGuard {
     }
 
     // include from max tx， you will not be able to make large transfers, if you make a large transfer, 1BNB will be charged.
-    function updateTaxFeePercent(uint256 taxFee) external onlyOwner() {
+    function updateTaxFeePercent(uint256 taxFee) external onlyOwner {
         _taxFee = taxFee;
     }
 
@@ -1139,6 +1167,7 @@ contract zBunny is Context, IBEP20, Ownable, ReentrancyGuard {
     ) private {
         require(from != address(0), "BEP20: transfer from the zero address");
         require(to != address(0), "BEP20: transfer to the zero address");
+        require(from != to, "BEP20: from and to address equals");
         require(amount > 0, "Transfer amount must be greater than zero");
         require(amount < _totalSupply, "Transfer amount must be less than total supply");
 
@@ -1220,7 +1249,7 @@ contract zBunny is Context, IBEP20, Ownable, ReentrancyGuard {
             farmAddress
         );
     }
-    event showAmountTest(uint256 amount);
+
 
     // 4%(reward) + 1%(add liquidity) = 5%
     function toRewardAndSwap(uint256 amount_) private {
@@ -1231,9 +1260,6 @@ contract zBunny is Context, IBEP20, Ownable, ReentrancyGuard {
         uint256 tokenForSwapAmount = amount_.mul(swapRate).div(10);
         uint256 tokenForLiquidityAmount = amount_.sub(tokenForSwapAmount);
 
-        // swap Token to Bunny
-        emit showAmountTest(tokenForSwapAmount);
-        
         uint256 beforeSwapBNB = address(this).balance;
         // swap Token to BNB
         Utils.swapTokensForEth(
@@ -1241,6 +1267,7 @@ contract zBunny is Context, IBEP20, Ownable, ReentrancyGuard {
             BUNNYAddress,
             tokenForSwapAmount
         );
+
         uint256 afterSwapBNB = address(this).balance;
         uint256 swapBNB = afterSwapBNB.sub(beforeSwapBNB); // 9/10
 
@@ -1306,8 +1333,8 @@ contract zBunny is Context, IBEP20, Ownable, ReentrancyGuard {
 
         // If you transfer all your balance out, there will be no reward for holding coins at that address for 50 years
         if(amount == balanceOf(sender)){
-            
-            _excludeFromReward(sender);
+
+            _accounts[sender].nextAvailableClaimDate = block.timestamp.add(FIFTY_YEARS);
 
             //remove reward from this address, and distribute to other holders
             updateAccountRewards(_accounts[sender].rewardBNB);
@@ -1352,7 +1379,7 @@ contract zBunny is Context, IBEP20, Ownable, ReentrancyGuard {
     }
 
     // Define large transfers, if transfer amount larger than 0.1%(default), take 1 bnb to reward
-    function setMaxTxRate(uint256 maxTxRate) public onlyOwner() {
+    function setMaxTxRate(uint256 maxTxRate) public onlyOwner {
         _maxTxAmount = _totalSupply.mul(maxTxRate).div(10000);
     }
 
@@ -1433,18 +1460,15 @@ contract zBunny is Context, IBEP20, Ownable, ReentrancyGuard {
         foundationAddress = foundationAddress_;
     }
 
-    function migrateToken() public onlyOwner {
+    function migrateTokentoFoundation() public onlyOwner {
         removeAllFee();
-        _transfer(address(this), _msgSender(), balanceOf(address(this)), 0);
+        _transfer(address(this), foundationAddress, balanceOf(address(this)), 0);
         restoreAllFee();
     }
 
-    function migrateBnb() public onlyOwner {
-        (bool success, ) = address(_msgSender()).call{ value: address(this).balance }("");
+    function migrateBnbtoFoundation() public onlyOwner {
+        (bool success, ) = address(foundationAddress).call{ value: address(this).balance }("");
         require(success, "Address: unable to send value, foundation may have reverted");
     }
-    
-    function destroyed() public onlyOwner{
-        selfdestruct(_msgSender());
-    }
+
 }
